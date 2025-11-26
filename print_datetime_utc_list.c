@@ -65,6 +65,7 @@ static const Zone ZONES[] = {
     {"UTC+4:30 (Afghanistan)",            4*60 + 30},
     {"UTC+4 (UAE/Georgia)",               4*60},
     {"UTC+3:30 (Iran)",                   3*60 + 30},
+    {"UTC+3 (Istanbul/Türkiye)",          3*60},
     {"UTC+3 (Moscow/East Africa)",        3*60},
     {"UTC+2 (South Africa)",              2*60},
     {"UTC+1 (Central Europe)",            1*60},
@@ -87,23 +88,29 @@ static const Zone ZONES[] = {
 int main(void) {
     int day, month, year, hour, minute, second;
 
-    printf("Enter UTC date-time (DD MM YYYY HH MM SS):\n");
+    printf("Enter Istanbul time (DD MM YYYY HH MM SS):\n");
     if (scanf("%d %d %d %d %d %d", &day, &month, &year, &hour, &minute, &second) != 6) {
         fprintf(stderr, "Invalid input. Expected 6 integers.\n");
         return 1;
     }
 
-    struct tm tm_utc = {0};
-    tm_utc.tm_mday = day;
-    tm_utc.tm_mon  = month - 1;
-    tm_utc.tm_year = year - 1900;
-    tm_utc.tm_hour = hour;
-    tm_utc.tm_min  = minute;
-    tm_utc.tm_sec  = second;
-    tm_utc.tm_isdst = -1;
+    // Print the input Istanbul time
+    printf("\nYou entered (Istanbul/Türkiye UTC+3): %02d-%02d-%04d %02d:%02d:%02d\n",
+           day, month, year, hour, minute, second);
 
-    // Treat input as UTC baseline epoch
-    time_t base_epoch = timegm_compat(&tm_utc);
+    struct tm tm_istanbul = {0};
+    tm_istanbul.tm_mday = day;
+    tm_istanbul.tm_mon  = month - 1;
+    tm_istanbul.tm_year = year - 1900;
+    tm_istanbul.tm_hour = hour;
+    tm_istanbul.tm_min  = minute;
+    tm_istanbul.tm_sec  = second;
+    tm_istanbul.tm_isdst = -1;
+
+    // Treat input as if it were UTC, then subtract Istanbul's offset (UTC+3 = 180 minutes)
+    // to get the actual UTC epoch
+    time_t istanbul_epoch = timegm_compat(&tm_istanbul);
+    time_t base_epoch = istanbul_epoch - (3 * 60 * 60); // Convert Istanbul to UTC
 
     printf("\nTimes across UTC offsets (east to west):\n");
 
