@@ -1,0 +1,83 @@
+import os
+import platform
+import subprocess
+
+def get_installed_kernels_linux():
+    kernels = []
+    boot_dir = "/boot"
+    if os.path.exists(boot_dir):
+        try:
+            for f in os.listdir(boot_dir):
+                if f.startswith("vmlinuz-"):
+                    kernels.append(f.replace("vmlinuz-", ""))
+        except Exception as e:
+            kernels.append(f"Error reading /boot: {e}")
+    return kernels
+
+def get_running_kernel():
+    return os.uname().release
+
+def check_windows_oem_key():
+    if platform.system() == "Windows":
+        try:
+            cmd = ['powershell', '(Get-WmiObject -query "select * from SoftwareLicensingService").OA3xOriginalProductKey']
+            result = subprocess.check_output(cmd, universal_newlines=True).strip()
+            if result:
+                return f"Windows OEM key found: {result}"
+            else:
+                return "No Windows OEM key found."
+        except Exception as e:
+            return f"Error checking Windows OEM key: {e}"
+    return "Not Windows."
+
+def check_linux_oem():
+    if platform.system() == "Linux":
+        try:
+            vendor = subprocess.check_output(['cat', '/sys/class/dmi/id/sys_vendor'], universal_newlines=True).strip()
+            return f"Linux system vendor: {vendor}"
+        except Exception as e:
+            return f"Error checking Linux OEM: {e}"
+    return "Not Linux."
+
+def check_macos():
+    if platform.system() == "Darwin":
+        return "MacOS detected (Apple OEM)."
+    return "Not MacOS."
+
+def check_freedos():
+    if platform.system() == "Linux":  # FreeDOS machines usually boot Linux after install
+        try:
+            with open("/sys/class/dmi/id/bios_version") as f:
+                bios_version = f.read().strip()
+            if "FreeDOS" in bios_version:
+                return "FreeDOS OEM detected."
+            else:
+                return "No FreeDOS signature found."
+        except Exception:
+            return "Unable to check FreeDOS."
+    return "Not FreeDOS."
+
+def main():
+    print("=== Kernel Scan ===")
+    if platform.system() == "Linux":
+        installed = get_installed_kernels_linux()
+        print("Installed kernels in /boot:")
+        for k in installed:
+            print(f" - {k}")
+        current = get_running_kernel()
+        print(f"\nCurrently running kernel: {current}")
+        if current in installed:
+            print(f"✅ Running kernel {current} is installed and active.")
+        else:
+            print(f"⚠️ Running kernel {current} not found in /boot.")
+    else:
+        print("Kernel scan only applies to Linux systems.")
+
+    print("\n=== OEM Check ===")
+    print(check_windows_oem_key())
+    print(check_linux_oem())
+    print(check_macos())
+    print(check_freedos())
+
+if __name__ == "__main__":
+    main()
